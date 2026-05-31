@@ -1,0 +1,74 @@
+<!DOCTYPE html>
+<html lang="ta">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>வாகன விலைக்கணிப்பு</title>
+    <style>
+        body { font-family: Arial, sans-serif; margin: 50px; background-color: #f4f4f4; }
+        .container { max-width: 400px; background: white; padding: 30px; border-radius: 10px; box-shadow: 0px 0px 10px rgba(0,0,0,0.1); }
+        input { width: 100%; padding: 10px; margin: 10px 0; border: 1px solid #ccc; border-radius: 5px; box-sizing: border-box; }
+        button { width: 100%; padding: 10px; background: #2196F3; color: white; border: none; border-radius: 5px; cursor: pointer; font-size: 16px; }
+        button:hover { background: #1976D2; }
+        #result_space { margin-top: 20px; font-weight: bold; }
+    </style>
+</head>
+<body>
+
+<div class="container">
+    <h2>வாகன விலைக்கணிப்பு</h2>
+    
+    <label>வாகனத்தின் பெயர் (எ.கா: Activa, Swift):</label>
+    <input type="text" id="vehicle_name" placeholder="உதாரணம்: Swift">
+
+    <label>ஓடிய கிலோமீட்டர்:</label>
+    <input type="number" id="km_run" placeholder="உதாரணம்: 15000">
+
+    <button onclick="calculatePrice()">விலையைக் கணக்கிடு</button>
+
+    <div id="result_space"></div>
+</div>
+
+<script>
+async function calculatePrice() {
+    let vehicleName = document.getElementById("vehicle_name").value;
+    let kmRun = document.getElementById("km_run").value;
+    let resultSpace = document.getElementById("result_space");
+
+    if (!vehicleName || !kmRun) {
+        resultSpace.innerHTML = "<p style='color: red;'>விவரங்களை நிரப்பவும்!</p>";
+        return;
+    }
+
+    resultSpace.innerHTML = "<p style='color: blue;'>ஜெமினி AI கணக்கிடுகிறது...</p>";
+
+    try {
+        // இங்கதான் யுஆர்எல் தப்பா இருந்தது, இப்போ சரி பண்ணியாச்சு!
+        let response = await fetch('/estimate', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ vehicle: vehicleName, km: kmRun })
+        });
+
+        let data = await response.json();
+
+        if (response.ok) {
+            resultSpace.innerHTML = `
+                <div style="border: 2px solid green; padding: 12px; margin-top: 10px; border-radius: 5px;">
+                    <p style="color: darkcyan; margin: 5px 0;">வாகனம்: <b>${data.vehicle_name}</b></p>
+                    <p style="color: #555; margin: 5px 0;">ஓடிய தூரம்: ${data.kilometers} கி.மீ</p>
+                    <hr>
+                    <p style="color: #e67e22; margin: 5px 0;">புதிய வாகனத்தின் ஆன்-ரோடு விலை: <br><span style="font-size: 20px;"><b>₹${data.new_price}</b></span></p>
+                    <p style="color: green; margin: 5px 0;">பழைய வாகனத்தின் மதிப்பு: <br><span style="font-size: 22px;"><b>₹${data.estimated_price}</b></span></p>
+                </div>`;
+        } else {
+            resultSpace.innerHTML = `<p style="color: red;">பிழை: ${data.error}</p>`;
+        }
+    } catch (error) {
+        resultSpace.innerHTML = "<p style='color: red;'>பைதான் சர்வர் ஆன் செய்யப்பட்டுள்ளதா எனப் பார்க்கவும்!</p>";
+    }
+}
+</script>
+
+</body>
+</html>
