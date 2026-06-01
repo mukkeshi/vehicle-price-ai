@@ -54,13 +54,10 @@ def estimate_with_ai():
         )
         ai_response_text = response.text.strip()
         
-        if ai_response_text.startswith("```json"):
-            ai_response_text = ai_response_text.replace("
-```json", "").replace("```", "").strip()
-        elif ai_response_text.startswith("```"):
-            ai_response_text = ai_response_text.replace("
-```", "").strip()
-            
+        # AI ரெஸ்பான்ஸில் வரும் தேவையற்ற சிம்பல்ஸ் மற்றும் மார்க்-டவுன் குறியீடுகளை சுத்தம் செய்யும் பகுதி
+        ai_response_text = ai_response_text.replace("```json", "").replace("
+```", "").replace("**", "").strip()
+        
         result_data = json.loads(ai_response_text)
         return jsonify(result_data)
     except Exception as e:
