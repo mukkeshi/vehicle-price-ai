@@ -8,6 +8,7 @@ app = Flask(__name__)
 CORS(app)
 
 # உங்களோட Gemini API Key
+
 os.environ["GEMINI_API_KEY"] = "AQ.Ab8RN6Itu_t99eVTx9HJKS2CxF0Fv8C44-hoNAy7NeWHY6ybPQ"
 
 try:
