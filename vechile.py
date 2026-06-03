@@ -7,7 +7,6 @@ from google import genai
 app = Flask(__name__)
 CORS(app)
 
-# உங்கள் Gemini API Key Render Environment-ல் இருந்து பாதுகாப்பாக எடுக்கப்படுகிறது
 os.environ["GEMINI_API_KEY"] = os.environ.get("GEMINI_API_KEY", "")
 
 try:
@@ -27,60 +26,30 @@ def estimate_with_ai():
     condition = data.get('condition', 'Good').strip()
     fuel_type = data.get('fuel_type', 'Petrol').strip()
     owners = data.get('owners', '1st Owner').strip()
-    lang = data.get('lang', 'en').strip() # யூசர் தேர்ந்தெடுக்கும் மொழி (en அல்லது ta)
+    lang = data.get('lang', 'en').strip()
     
-    if not vehicle or not km:
-        return jsonify({"error": "Details are required!" if lang == 'en' else "விவரங்கள் தேவை!"}), 400
-
-    # மொழியைப் பொறுத்து அட்வைஸ் கேட்கும் பிராம்ப்ட் லாஜிக்
-    advice_instruction = (
-        "A short, expert 2-sentence market advice in English explaining if this is a good deal considering the fuel type, owners count, and condition, and mention what specific parts to check."
-        if lang == 'en' else
-        "A short, expert 2-sentence market advice in Tamil explaining if this is a good deal considering the fuel type, owners count, and condition, and mention what specific parts to check."
-    )
-
     prompt = f"""
-    You are an expert Indian vehicle valuation and automobile market analyst. 
-    Analyze the following vehicle and provide structured data in Indian Rupees (INR):
-    
-    Vehicle Name: {vehicle}
-    Kilometers Driven: {km} km
-    Current Condition: {condition}
-    Fuel Type: {fuel_type}
-    Number of Owners: {owners}
-    
-    Take into account that EV resale value drop differs from Petrol/Diesel, and higher number of owners significantly reduces the used car market value in India.
-    
-    Return the response strictly as a JSON object with these exact keys, and no extra text or markdown:
+    You are an expert Indian vehicle valuation analyst. 
+    Vehicle: {vehicle}, KM: {km}, Condition: {condition}, Fuel: {fuel_type}, Owners: {owners}.
+    Return strictly as JSON:
     {{
         "vehicle_name": "{vehicle.upper()}",
         "kilometers": "{km}",
         "condition": "{condition}",
         "fuel_type": "{fuel_type}",
         "owners": "{owners}",
-        "new_price": "only the brand new on-road integer price here based on current Indian market",
-        "estimated_price": "only the calculated used resale integer price here based on market trends, condition, and owners",
-        "depreciation_percent": "only the calculated integer value of price drop percentage from new price",
-        "ai_advice": "{advice_instruction}"
+        "new_price": "integer price",
+        "estimated_price": "integer price",
+        "depreciation_percent": "integer percentage",
+        "ai_advice": "2 sentence expert advice in {lang}."
     }}
     """
-
     try:
-        response = client.models.generate_content(
-            model='gemini-2.5-flash',
-            contents=prompt,
-        )
-        ai_response_text = response.text.strip()
-        
-        ai_response_text = ai_response_text.replace("```json", "").replace("```", "").replace("**", "").strip()
-        
-        result_data = json.loads(ai_response_text)
-        return jsonify(result_data)
+        response = client.models.generate_content(model='gemini-1.5-flash', contents=prompt)
+        ai_text = response.text.replace("```json", "").replace("```", "").replace("**", "").strip()
+        return jsonify(json.loads(ai_text))
     except Exception as e:
-        print("API Error:", e)
-        error_msg = "Error calculating online." if lang == 'en' else "ஆன்லைனில் கணக்கிடுவதில் பிழை ஏற்பட்டது."
-        return jsonify({"error": error_msg}), 500
+        return jsonify({"error": "Calculation error"}), 500
 
 if __name__ == '__main__':
-    port = int(os.environ.get("PORT", 5000))
-    app.run(host='0.0.0.0', port=port, debug=False)
+    app.run(host='0.0.0.0', port=int(os.environ.get("PORT", 5000)))
