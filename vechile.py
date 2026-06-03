@@ -66,7 +66,7 @@ def estimate_with_ai():
     
     CRITICAL INSTRUCTION: Look at the uploaded image. If it contains a dog, cat, animal, human face, building, food or anything that is NOT a car, bike, scooter, truck, or commercial vehicle, treat it as an INVALID image. For invalid images, you MUST return 'new_price': 0, 'estimated_price': 0, 'depreciation_percent': 0 and the rejection warning inside 'ai_advice'.
     
-    Return the response strictly as a JSON object with these exact keys. Do not include markdown codeblocks or '```json'. Just pure JSON content text:
+    Return the response strictly as a JSON object with these exact keys. Do not include markdown codeblocks. Just pure JSON content text:
     {{
         "vehicle_name": "{vehicle.upper()}",
         "kilometers": "{km}",
@@ -89,16 +89,13 @@ def estimate_with_ai():
         )
         ai_response_text = response.text.strip()
         
-        # எர்ரர் வராமல் தடுக்க மார்க்-டவுன் குறியீடுகள் (```) இங்கே நீக்கப்படுகின்றன
-        if "```json" in ai_response_text:
-            ai_response_text = ai_response_text.split("```json")[1].split("```")[0].strip()
-        elif "```" in ai_response_text:
-            ai_response_text = ai_response_text.split("
-```")[1].split("```")[0].strip()
-            
-        ai_response_text = ai_response_text.replace("**", "").strip()
+        # 💡 [பழுதுநீக்கம்]: எடிட்டர்களில் லைன் உடையாமல் இருக்க மிகவும் பாதுகாப்பான முறையில் மார்க்-டவுன் குறியீடுகள் நீக்கப்படுகின்றன
+        ai_response_text = ai_response_text.replace("```json", "")
+        ai_response_text = ai_response_text.replace("```", "")
+        ai_response_text = ai_response_text.replace("**", "")
+        ai_response_text = ai_response_text.strip()
         
-        # கிளீன் செய்யப்பட்ட சுத்தமான JSON உரையை இப்போது லோடு செய்கிறோம்
+        # கிளீன் செய்யப்பட்ட உரையை JSON ஆக மாற்றுகிறோம்
         result_data = json.loads(ai_response_text)
         return jsonify(result_data)
         
