@@ -37,6 +37,7 @@
             position: relative;
         }
 
+        /* Language Dropdown Style */
         .lang-container {
             position: absolute;
             top: 20px;
@@ -357,7 +358,7 @@
                 <input type="file" id="vehicle_photo" accept="image/*" style="padding: 10px;" onchange="previewImage(event)">
                 
                 <div id="imagePreviewContainer" style="display: none; margin-top: 15px; text-align: center;">
-                    <p style="font-size: 0.85rem; color: var(--text-secondary); margin-bottom: 5px;" id="lblPreviewText">தேர்ந்தெடுக்கப்பட்ட புகைப்படம்:</p>
+                    <p style="font-size: 0.85rem; color: var(--text-secondary); margin-bottom: 5px;">தேர்ந்தெடுக்கப்பட்ட புகைப்படம்:</p>
                     <img id="imagePreview" src="#" alt="Vehicle Preview" style="max-width: 100%; max-height: 200px; border-radius: 12px; border: 2px solid var(--accent-blue); padding: 3px;">
                 </div>
             </div>
@@ -423,7 +424,7 @@
                 resKm: "ஓடிய தூரம்", resCond: "நிலை (Condition)", resFuel: "எரிபொருள் வகை", resOwners: "உரிமையாளர்",
                 resNew: "புதிய வாகனத்தின் இன்றைய ஆன்-ரோடு விலை:", resResale: "தற்போதைய மறுவிற்பனை மதிப்பு (Resale Value):",
                 resAdvTitle: "💡 Gemini AI நிபுணர் அறிக்கை:", btnPdf: "📄 PDF அறிக்கை", btnWa: "💬 வாட்ஸ்அப் பகிர்வு",
-                dropText: "Price Drop", errText: "தயவுசெய்து அனைத்து விவரங்களையும் நிரப்பவும்!", waHeader: "AI வாகன மதிப்பு அறிக்கை", preview: "தேர்ந்தெடுக்கப்பட்ட புகைப்படம்:"
+                dropText: "Price Drop", errText: "தயவுசெய்து அனைத்து விவரங்களையும் நிரப்பவும்!", waHeader: "AI வாகன மதிப்பு அறிக்கை"
             },
             en: {
                 title: "AI Vehicle Valuation", subtitle: "Premium Enterprise Pro Edition",
@@ -436,10 +437,11 @@
                 resKm: "Driven", resCond: "Condition", resFuel: "Fuel Type", resOwners: "Owner",
                 resNew: "Current On-Road Price of New Vehicle:", resResale: "Estimated Resale Value:",
                 resAdvTitle: "💡 Gemini AI Expert Report:", btnPdf: "📄 PDF Report", btnWa: "💬 WhatsApp Share",
-                dropText: "Price Drop", errText: "Please fill all fields!", waHeader: "AI Vehicle Valuation Report", preview: "Selected Photo:"
+                dropText: "Price Drop", errText: "Please fill all fields!", waHeader: "AI Vehicle Valuation Report"
             }
         };
 
+        // புகைப்படத்தை வெப்சைட் ஸ்க்ரீனிலேயே காட்டும் ஃபங்க்ஷன்
         function previewImage(event) {
             const reader = new FileReader();
             const imageField = document.getElementById('imagePreview');
@@ -473,7 +475,6 @@
             document.getElementById('lblPhoto').innerText = t.photo;
             document.getElementById('btnCalculate').innerText = t.btnCalc;
             document.getElementById('lblLoaderText').innerText = t.loader;
-            document.getElementById('lblPreviewText').innerText = t.preview;
 
             document.getElementById('optPetrol').innerText = t.petrol;
             document.getElementById('optDiesel').innerText = t.diesel;
@@ -550,6 +551,7 @@
                     return;
                 } 
 
+                // தவறான நாய் போட்டோக்கள் வரும்போது தடுத்து நிறுத்தும் லாஜிக்
                 if (data.estimated_price == 0 || data.estimated_price == "0") {
                     errorMsg.innerText = data.ai_advice;
                     errorMsg.style.display = 'block';
