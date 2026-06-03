@@ -84,7 +84,7 @@ def estimate_with_ai():
 
     try:
         response = client.models.generate_content(
-            model='gemini-2.5-flash',
+            model='gemini-1.5-flash',
             contents=contents_list,
         )
         ai_response_text = response.text.strip()
