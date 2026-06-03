@@ -1,10 +1,8 @@
 import os
 import json
-import io
 from flask import Flask, request, jsonify, send_from_directory
 from flask_cors import CORS
 from google import genai
-from PIL import Image # போட்டோக்களை பிராசஸ் செய்ய Pillow இம்போர்ட் செய்கிறோம்
 
 app = Flask(__name__)
 CORS(app)
@@ -23,46 +21,31 @@ def home():
 
 @app.route('/estimate', methods=['POST'])
 def estimate_with_ai():
-    # போட்டோ வருவதால் request.form மூலமாக டேட்டாவை எடுக்க வேண்டும்
-    vehicle = request.form.get('vehicle', '').strip()
-    km = request.form.get('km', '').strip()
-    condition = request.form.get('condition', 'Good').strip()
-    fuel_type = request.form.get('fuel_type', 'Petrol').strip()
-    owners = request.form.get('owners', '1st Owner').strip()
-    lang = request.form.get('lang', 'ta').strip()
-    
-    # போட்டோ ஃபைலை எடுக்கிறோம்
-    photo_file = request.files.get('photo')
+    data = request.get_json()
+    vehicle = data.get('vehicle', '').strip()
+    km = data.get('km', '').strip()
+    condition = data.get('condition', 'Good').strip()
+    fuel_type = data.get('fuel_type', 'Petrol').strip()
+    owners = data.get('owners', '1st Owner').strip()
+    lang = data.get('lang', 'en').strip() # யூசர் தேர்ந்தெடுக்கும் மொழி (en அல்லது ta)
     
     if not vehicle or not km:
-        error_text = "விவரங்கள் தேவை!" if lang == 'ta' else "Details are required!"
-        return jsonify({"error": error_text}), 400
+        return jsonify({"error": "Details are required!" if lang == 'en' else "விவரங்கள் தேவை!"}), 400
 
-    # ஜெமினிக்கு அனுப்பும் கன்டென்ட் லிஸ்ட்
-    contents_list = []
-
-    if photo_file:
-        try:
-            image_bytes = photo_file.read()
-            img = Image.open(io.BytesIO(image_bytes))
-            contents_list.append(img) # போட்டோ இருந்தால் லிஸ்ட்டில் சேர்க்கிறோம்
-        except Exception as e:
-            print("Image Load Error:", e)
-
-    # மொழிக்கு தகுந்தாற்போல் AI அட்வைஸ் கேட்கும் லாஜிக்
-    advice_prompt = (
-        "A short, expert 2-sentence market advice in Tamil explaining if this is a good deal considering the fuel type, owners count, and condition. If an image was uploaded, strictly mention what visual defects (like scratches, dents, or clean paint) you found in the photo, and state whether it matches the user claimed condition."
-        if lang == 'ta' else
-        "A short, expert 2-sentence market advice in English explaining if this is a good deal considering the fuel type, owners count, and condition. If an image was uploaded, strictly mention what visual defects (like scratches, dents, or clean paint) you found in the photo, and state whether it matches the user claimed condition."
+    # மொழியைப் பொறுத்து அட்வைஸ் கேட்கும் பிராம்ப்ட் லாஜிக்
+    advice_instruction = (
+        "A short, expert 2-sentence market advice in English explaining if this is a good deal considering the fuel type, owners count, and condition, and mention what specific parts to check."
+        if lang == 'en' else
+        "A short, expert 2-sentence market advice in Tamil explaining if this is a good deal considering the fuel type, owners count, and condition, and mention what specific parts to check."
     )
 
     prompt = f"""
     You are an expert Indian vehicle valuation and automobile market analyst. 
-    Analyze the following vehicle and the uploaded photo (if present) to determine its exact used market resale value:
+    Analyze the following vehicle and provide structured data in Indian Rupees (INR):
     
     Vehicle Name: {vehicle}
     Kilometers Driven: {km} km
-    User Claimed Condition: {condition}
+    Current Condition: {condition}
     Fuel Type: {fuel_type}
     Number of Owners: {owners}
     
@@ -78,16 +61,14 @@ def estimate_with_ai():
         "new_price": "only the brand new on-road integer price here based on current Indian market",
         "estimated_price": "only the calculated used resale integer price here based on market trends, condition, and owners",
         "depreciation_percent": "only the calculated integer value of price drop percentage from new price",
-        "ai_advice": "{advice_prompt}"
+        "ai_advice": "{advice_instruction}"
     }}
     """
-    
-    contents_list.append(prompt) # பிராம்ப்ட்டை சேர்க்கிறோம்
 
     try:
         response = client.models.generate_content(
             model='gemini-2.5-flash',
-            contents=contents_list, # இமேஜ் மற்றும் டெக்ஸ்ட் இரண்டையும் ஒன்றாக அனுப்புகிறோம்
+            contents=prompt,
         )
         ai_response_text = response.text.strip()
         
@@ -97,8 +78,8 @@ def estimate_with_ai():
         return jsonify(result_data)
     except Exception as e:
         print("API Error:", e)
-        error_text = "ஆன்லைனில் கணக்கிடுவதில் பிழை ஏற்பட்டது." if lang == 'ta' else "An error occurred during online calculation."
-        return jsonify({"error": error_text}), 500
+        error_msg = "Error calculating online." if lang == 'en' else "ஆன்லைனில் கணக்கிடுவதில் பிழை ஏற்பட்டது."
+        return jsonify({"error": error_msg}), 500
 
 if __name__ == '__main__':
     port = int(os.environ.get("PORT", 5000))
