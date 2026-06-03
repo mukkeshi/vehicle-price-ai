@@ -29,7 +29,6 @@ def estimate_with_ai():
     if not vehicle or not km:
         return jsonify({"error": "விவரங்கள் தேவை!"}), 400
 
-    # Prompt-ல் Condition மற்றும் Extra Features சேர்க்கப்பட்டுள்ளது
     prompt = f"""
     You are an expert vehicle valuation and automobile backend advisor. 
     Analyze the following vehicle and provide structured data in Indian Rupees (INR):
@@ -57,8 +56,8 @@ def estimate_with_ai():
         )
         ai_response_text = response.text.strip()
         
-        ai_response_text = ai_response_text.replace("```json", "").replace("
-```", "").replace("**", "").strip()
+        # உடைந்த வரி இங்கே சரியாக ஒரே வரியாக மாற்றப்பட்டுள்ளது
+        ai_response_text = ai_response_text.replace("```json", "").replace("```", "").replace("**", "").strip()
         
         result_data = json.loads(ai_response_text)
         return jsonify(result_data)
