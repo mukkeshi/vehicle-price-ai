@@ -1,6 +1,7 @@
 import os
 import json
 import io
+import time
 from flask import Flask, request, jsonify, send_from_directory
 from flask_cors import CORS
 from google import genai
@@ -9,7 +10,6 @@ from PIL import Image
 app = Flask(__name__)
 CORS(app)
 
-# உங்கள் Gemini API Key Render Environment-ல் இருந்து பாதுகாப்பாக எடுக்கப்படுகிறது
 os.environ["GEMINI_API_KEY"] = os.environ.get("GEMINI_API_KEY", "")
 
 try:
@@ -29,80 +29,54 @@ def estimate_with_ai():
     fuel_type = request.form.get('fuel_type', 'Petrol').strip()
     owners = request.form.get('owners', '1st Owner').strip()
     lang = request.form.get('lang', 'ta').strip()
-    
     photo_file = request.files.get('photo')
     
     if not vehicle or not km:
-        error_text = "விவரங்கள் தேவை!" if lang == 'ta' else "Details are required!"
-        return jsonify({"error": error_text}), 400
+        return jsonify({"error": "Details required"}), 400
 
     contents_list = []
-
-    # போட்டோ இருந்தால் பிராசஸ் செய்கிறது
     if photo_file:
         try:
-            image_bytes = photo_file.read()
-            img = Image.open(io.BytesIO(image_bytes))
+            img = Image.open(io.BytesIO(photo_file.read()))
             contents_list.append(img)
-        except Exception as e:
-            print("Image Load Error:", e)
-
-    # நாய்/விலங்கு போட்டோக்களை கண்டறியும் துல்லியமான பிராம்ப்ட் லாஜிக்
-    advice_prompt = (
-        "CRITICAL IMAGE VALIDATION: If the uploaded image is NOT a vehicle (e.g., if it is a dog, cat, animal, person, building, food or random object), you must strictly set the 'estimated_price' to 0 and 'new_price' to 0, and set 'ai_advice' to 'தயவுசெய்து சரியான வாகனத்தின் புகைப்படத்தை பதிவேற்றவும்! நீங்கள் பதிவேற்றிய புகைப்படம் ஒரு வாகனம் அல்ல.'. Otherwise, write a short, expert 2-sentence market advice in Tamil. If a valid vehicle image was uploaded, mention what visual defects (like scratches, dents, or clean paint) you found in the photo."
-        if lang == 'ta' else
-        "CRITICAL IMAGE VALIDATION: If the uploaded image is NOT a vehicle (e.g., if it is a dog, cat, animal, person, building, food or random object), you must strictly set the 'estimated_price' to 0 and 'new_price' to 0, and set 'ai_advice' to 'Please upload a valid vehicle image! The uploaded image is not a vehicle.'. Otherwise, write a short, expert 2-sentence market advice in English. If a valid vehicle image was uploaded, mention what visual defects (like scratches, dents, or clean paint) you found in the photo."
-    )
+        except: pass
 
     prompt = f"""
-    You are an expert Indian vehicle valuation and automobile market analyst. 
-    Analyze the following vehicle details and the uploaded photo (if present):
-    
-    Vehicle Name: {vehicle}
-    Kilometers Driven: {km} km
-    User Claimed Condition: {condition}
-    Fuel Type: {fuel_type}
-    Number of Owners: {owners}
-    
-    CRITICAL INSTRUCTION: Look at the uploaded image. If it contains a dog, cat, animal, human face, building, food or anything that is NOT a car, bike, scooter, truck, or commercial vehicle, treat it as an INVALID image. For invalid images, you MUST return 'new_price': 0, 'estimated_price': 0, 'depreciation_percent': 0 and the rejection warning inside 'ai_advice'.
-    
-    Return the response strictly as a JSON object with these exact keys. Do not include markdown codeblocks. Just pure JSON content text:
+    You are an expert vehicle valuation analyst. Analyze: {vehicle}, {km}km, {condition}, {fuel_type}, {owners}.
+    If the image is not a vehicle, set all prices to 0 and advice to 'Invalid image'.
+    Return ONLY pure JSON. No markdown, no code blocks, no extra text.
     {{
-        "vehicle_name": "{vehicle.upper()}",
+        "vehicle_name": "{vehicle}",
         "kilometers": "{km}",
         "condition": "{condition}",
         "fuel_type": "{fuel_type}",
         "owners": "{owners}",
-        "new_price": "integer price or 0 if image is invalid",
-        "estimated_price": "integer used resale price or 0 if image is invalid",
-        "depreciation_percent": "integer drop percentage or 0 if image is invalid",
-        "ai_advice": "{advice_prompt}"
+        "new_price": 500000,
+        "estimated_price": 300000,
+        "depreciation_percent": 40,
+        "ai_advice": "Expert market advice here."
     }}
     """
-    
     contents_list.append(prompt)
 
-    try:
-        response = client.models.generate_content(
-            model='gemini-2.5-flash',
-            contents=contents_list,
-        )
-        ai_response_text = response.text.strip()
-        
-        # 💡 [பழுதுநீக்கம்]: எடிட்டர்களில் லைன் உடையாமல் இருக்க மிகவும் பாதுகாப்பான முறையில் மார்க்-டவுன் குறியீடுகள் நீக்கப்படுகின்றன
-        ai_response_text = ai_response_text.replace("```json", "")
-        ai_response_text = ai_response_text.replace("```", "")
-        ai_response_text = ai_response_text.replace("**", "")
-        ai_response_text = ai_response_text.strip()
-        
-        # கிளீன் செய்யப்பட்ட உரையை JSON ஆக மாற்றுகிறோம்
-        result_data = json.loads(ai_response_text)
-        return jsonify(result_data)
-        
-    except Exception as e:
-        print("API or JSON Parsing Error:", e)
-        error_text = "ஆன்லைனில் கணக்கிடுவதில் பிழை ஏற்பட்டது." if lang == 'ta' else "An error occurred during online calculation."
-        return jsonify({"error": error_text}), 500
+    # 3 முறை மீண்டும் முயற்சிக்கும் (Retry) வசதி
+    for attempt in range(3):
+        try:
+            response = client.models.generate_content(model='gemini-2.5-flash', contents=contents_list)
+            text = response.text.replace("```json", "").replace("```", "").strip()
+            
+            # JSON பகுதி மட்டும் எடுக்கும் லாஜிக்
+            start = text.find('{')
+            end = text.rfind('}') + 1
+            if start != -1 and end != -1:
+                text = text[start:end]
+            
+            return jsonify(json.loads(text))
+        except:
+            time.sleep(2)
+            continue
+            
+    return jsonify({"error": "Calculation error"}), 500
 
 if __name__ == '__main__':
     port = int(os.environ.get("PORT", 5000))
