@@ -3,8 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>AI வாகன விலைக்கணிப்பு - Premium</title>
-    <!-- Google Fonts for Modern Look -->
+    <title>AI வாகன விலைக்கணிப்பு - Pro</title>
     <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;600;700&display=swap" rel="stylesheet">
     <style>
         :root {
@@ -16,6 +15,7 @@
             --accent-blue: #00d2ff;
             --accent-green: #00ff87;
             --accent-orange: #ff9f43;
+            --accent-purple: #a55eea;
         }
 
         * {
@@ -37,7 +37,7 @@
 
         .container {
             width: 100%;
-            max-width: 550px;
+            max-width: 580px;
             background: var(--card-bg);
             backdrop-filter: blur(16px);
             -webkit-backdrop-filter: blur(16px);
@@ -48,17 +48,13 @@
             transition: transform 0.3s ease;
         }
 
-        .container:hover {
-            transform: translateY(-5px);
-        }
-
         .header {
             text-align: center;
             margin-bottom: 35px;
         }
 
         .header h1 {
-            font-size: 2rem;
+            font-size: 2.2rem;
             font-weight: 700;
             background: linear-gradient(to right, var(--accent-blue), var(--accent-green));
             -webkit-background-clip: text;
@@ -67,12 +63,12 @@
         }
 
         .header p {
-            font-size: 0.9rem;
+            font-size: 0.95rem;
             color: var(--text-secondary);
         }
 
         .form-group {
-            margin-bottom: 25px;
+            margin-bottom: 22px;
         }
 
         .form-group label {
@@ -81,10 +77,9 @@
             font-weight: 600;
             margin-bottom: 8px;
             color: var(--text-secondary);
-            letter-spacing: 0.5px;
         }
 
-        .form-group input {
+        .form-group input, .form-group select {
             width: 100%;
             padding: 14px 18px;
             background: rgba(255, 255, 255, 0.05);
@@ -96,10 +91,14 @@
             transition: all 0.3s ease;
         }
 
-        .form-group input:focus {
+        .form-group select option {
+            background: #203a43;
+            color: #fff;
+        }
+
+        .form-group input:focus, .form-group select:focus {
             border-color: var(--accent-blue);
             background: rgba(255, 255, 255, 0.1);
-            box-shadow: 0 0 12px rgba(0, 210, 255, 0.2);
         }
 
         .btn-submit {
@@ -117,16 +116,9 @@
         }
 
         .btn-submit:hover {
-            background: linear-gradient(135deg, #0072ff, #00c6ff);
-            box-shadow: 0 8px 25px rgba(0, 114, 255, 0.4);
-            transform: scale(1.02);
+            transform: scale(1.01);
         }
 
-        .btn-submit:active {
-            transform: scale(0.98);
-        }
-
-        /* Loading Spinner */
         .loader-container {
             display: none;
             text-align: center;
@@ -143,11 +135,8 @@
             margin: 0 auto 10px;
         }
 
-        @keyframes spin {
-            to { transform: rotate(360deg); }
-        }
+        @keyframes spin { to { transform: rotate(360deg); } }
 
-        /* Result Section */
         .result-box {
             display: none;
             margin-top: 35px;
@@ -162,24 +151,31 @@
         }
 
         .result-title {
-            font-size: 1.2rem;
-            font-weight: 600;
+            font-size: 1.4rem;
+            font-weight: 700;
             color: var(--accent-blue);
             margin-bottom: 15px;
             text-align: center;
-            text-transform: uppercase;
         }
 
-        .info-row {
+        .meta-container {
             display: flex;
-            justify-content: space-between;
-            font-size: 0.95rem;
+            gap: 10px;
             margin-bottom: 20px;
-            color: var(--text-secondary);
-            background: rgba(255, 255, 255, 0.03);
-            padding: 10px 15px;
-            border-radius: 8px;
         }
+
+        .meta-badge {
+            flex: 1;
+            background: rgba(255, 255, 255, 0.04);
+            padding: 10px;
+            border-radius: 10px;
+            text-align: center;
+            font-size: 0.85rem;
+            color: var(--text-secondary);
+            border: 1px solid var(--card-border);
+        }
+
+        .meta-badge strong { display: block; color: #fff; font-size: 1rem; margin-top: 2px;}
 
         .price-card {
             background: rgba(255, 255, 255, 0.04);
@@ -190,36 +186,58 @@
             display: flex;
             flex-direction: column;
             gap: 5px;
+            position: relative;
         }
 
         .price-card.new { border-left: 5px solid var(--accent-orange); }
         .price-card.resale { border-left: 5px solid var(--accent-green); }
 
-        .price-label {
-            font-size: 0.85rem;
-            color: var(--text-secondary);
-            font-weight: 600;
-        }
-
-        .price-value {
-            font-size: 1.6rem;
-            font-weight: 700;
-        }
-        
+        .price-label { font-size: 0.85rem; color: var(--text-secondary); font-weight: 600; }
+        .price-value { font-size: 1.7rem; font-weight: 700; }
         .price-card.new .price-value { color: var(--accent-orange); }
         .price-card.resale .price-value { color: var(--accent-green); }
+
+        .pct-badge {
+            position: absolute;
+            right: 20px;
+            top: 20px;
+            background: rgba(255, 75, 75, 0.2);
+            color: #ff7675;
+            padding: 4px 10px;
+            border-radius: 20px;
+            font-size: 0.8rem;
+            font-weight: 700;
+            border: 1px solid rgba(255, 75, 75, 0.3);
+        }
+
+        .advice-card {
+            background: rgba(165, 94, 234, 0.08);
+            border: 1px solid rgba(165, 94, 234, 0.2);
+            border-left: 5px solid var(--accent-purple);
+            border-radius: 16px;
+            padding: 20px;
+            margin-top: 15px;
+        }
+
+        .advice-title {
+            font-size: 0.9rem;
+            font-weight: 700;
+            color: var(--accent-purple);
+            margin-bottom: 5px;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+
+        .advice-text { font-size: 0.95rem; line-height: 1.5; color: #e0e0e0; }
 
         .error-box {
             display: none;
             margin-top: 25px;
             background: rgba(255, 75, 75, 0.1);
-            border: 1px solid rgba(255, 75, 75, 0.3);
             border-left: 5px solid #ff4b4b;
             padding: 15px;
             border-radius: 12px;
             color: #ff8a8a;
-            font-size: 0.95rem;
-            font-weight: 500;
             text-align: center;
         }
     </style>
@@ -229,7 +247,7 @@
     <div class="container">
         <div class="header">
             <h1>AI வாகன விலைக்கணிப்பு</h1>
-            <p>உடனடி மற்றும் துல்லியமான சந்தை மதிப்பு அறிக்கை</p>
+            <p>Premium Enterprise Edition</p>
         </div>
 
         <div class="form-group">
@@ -242,24 +260,31 @@
             <input type="number" id="km" placeholder="எ.கா: 15000">
         </div>
 
-        <button class="btn-submit" onclick="calculatePrice()">விலையைக் கணக்கிடு 🚀</button>
-
-        <!-- Loader -->
-        <div class="loader-container" id="loader">
-            <div class="spinner"></div>
-            <p style="color: var(--text-secondary); font-size: 0.9rem;">AI மதிப்பை பகுப்பாய்வு செய்கிறது...</p>
+        <div class="form-group">
+            <label for="condition">வாகனத்தின் தற்போதைய நிலை (Condition)</label>
+            <select id="condition">
+                <option value="Excellent">Excellent (மிகவும் புதியது போல் உள்ளது)</option>
+                <option value="Good" selected>Good (நன்றாக உள்ளது - Minor Scratches)</option>
+                <option value="Fair">Fair (அதிக பயன்பாடு - Repairs Needed)</option>
+            </select>
         </div>
 
-        <!-- Error Msg -->
+        <button class="btn-submit" onclick="calculatePrice()">விலையைக் கணக்கிடு 🚀</button>
+
+        <div class="loader-container" id="loader">
+            <div class="spinner"></div>
+            <p style="color: var(--text-secondary); font-size: 0.9rem;">AI மேம்பட்ட சந்தை மதிப்பை பகுப்பாய்வு செய்கிறது...</p>
+        </div>
+
         <div class="error-box" id="errorMsg"></div>
 
-        <!-- Output Cards -->
+        <!-- Advanced Output Cards -->
         <div class="result-box" id="resultBox">
-            <div class="result-title" id="resVehicleName">YAMAHA</div>
+            <div class="result-title" id="resVehicleName">VEHICLE</div>
             
-            <div class="info-row">
-                <span>ஓடிய தூரம்:</span>
-                <span id="resKm" style="color: #fff; font-weight: 600;">0 km</span>
+            <div class="meta-container">
+                <div class="meta-badge">ஓடிய தூரம் <strong id="resKm">0 km</strong></div>
+                <div class="meta-badge">நிலை (Condition) <strong id="resCondition">Good</strong></div>
             </div>
 
             <div class="price-card new">
@@ -270,6 +295,12 @@
             <div class="price-card resale">
                 <span class="price-label">தற்போதைய மறுவிற்பனை மதிப்பு (Resale Value):</span>
                 <span class="price-value" id="resEstimatedPrice">₹0</span>
+                <span class="pct-badge" id="resPct">0% Drop</span>
+            </div>
+
+            <div class="advice-card">
+                <div class="advice-title">💡 Gemini AI நிபுணர் அறிக்கை:</div>
+                <p class="advice-text" id="resAdvice">பகுப்பாய்வு செய்யப்படுகிறது...</p>
             </div>
         </div>
     </div>
@@ -278,12 +309,12 @@
         async function calculatePrice() {
             const vehicle = document.getElementById('vehicle').value;
             const km = document.getElementById('km').value;
+            const condition = document.getElementById('condition').value;
             
             const loader = document.getElementById('loader');
             const resultBox = document.getElementById('resultBox');
             const errorMsg = document.getElementById('errorMsg');
 
-            // Reset UI
             resultBox.style.display = 'none';
             errorMsg.style.display = 'none';
 
@@ -293,15 +324,13 @@
                 return;
             }
 
-            // Show Loader
             loader.style.display = 'block';
 
             try {
-                // திருத்தப்பட்ட சரியான Fetch API Call
                 const response = await fetch('/estimate', {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ vehicle: vehicle, km: km })
+                    body: JSON.stringify({ vehicle: vehicle, km: km, condition: condition })
                 });
 
                 const data = await response.json();
@@ -311,7 +340,6 @@
                     errorMsg.innerText = data.error;
                     errorMsg.style.display = 'block';
                 } else {
-                    // Format Numbers to Currency Format (e.g., 1,50,000)
                     const formatCurrency = (num) => {
                         const cleanNum = String(num).replace(/[^0-9]/g, '');
                         return cleanNum ? '₹' + Number(cleanNum).toLocaleString('en-IN') : '₹' + num;
@@ -319,8 +347,11 @@
 
                     document.getElementById('resVehicleName').innerText = data.vehicle_name;
                     document.getElementById('resKm').innerText = Number(data.kilometers).toLocaleString('en-IN') + ' km';
+                    document.getElementById('resCondition').innerText = data.condition;
                     document.getElementById('resNewPrice').innerText = formatCurrency(data.new_price);
                     document.getElementById('resEstimatedPrice').innerText = formatCurrency(data.estimated_price);
+                    document.getElementById('resPct').innerText = data.depreciation_percent + '% Price Drop';
+                    document.getElementById('resAdvice').innerText = data.ai_advice;
                     
                     resultBox.style.display = 'block';
                 }
