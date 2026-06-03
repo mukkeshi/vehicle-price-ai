@@ -4,6 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>AI வாகன விலைக்கணிப்பு - Premium</title>
+    <!-- Google Fonts for Modern Look -->
     <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;600;700&display=swap" rel="stylesheet">
     <style>
         :root {
@@ -243,13 +244,16 @@
 
         <button class="btn-submit" onclick="calculatePrice()">விலையைக் கணக்கிடு 🚀</button>
 
+        <!-- Loader -->
         <div class="loader-container" id="loader">
             <div class="spinner"></div>
             <p style="color: var(--text-secondary); font-size: 0.9rem;">AI மதிப்பை பகுப்பாய்வு செய்கிறது...</p>
         </div>
 
+        <!-- Error Msg -->
         <div class="error-box" id="errorMsg"></div>
 
+        <!-- Output Cards -->
         <div class="result-box" id="resultBox">
             <div class="result-title" id="resVehicleName">YAMAHA</div>
             
@@ -293,10 +297,10 @@
             loader.style.display = 'block';
 
             try {
-                // உங்கள் Render வெப்சைட் URL-ஐ இது தானாகவே எடுத்துக்கொள்ளும்
+                // திருத்தப்பட்ட சரியான Fetch API Call
                 const response = await fetch('/estimate', {
                     method: 'POST',
-                    headers: { '熱' : 'application/json', 'Content-Type': 'application/json' },
+                    headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify({ vehicle: vehicle, km: km })
                 });
 
