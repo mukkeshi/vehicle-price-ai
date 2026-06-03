@@ -89,14 +89,16 @@ def estimate_with_ai():
         )
         ai_response_text = response.text.strip()
         
-        # எர்ரர் வராமல் தடுக்க கிளீனிங் செய்யப்படுகிறது
+        # எர்ரர் வராமல் தடுக்க மார்க்-டவுன் குறியீடுகள் (```) இங்கே நீக்கப்படுகின்றன
         if "```json" in ai_response_text:
             ai_response_text = ai_response_text.split("```json")[1].split("```")[0].strip()
         elif "```" in ai_response_text:
-            ai_response_text = ai_response_text.split("```")[1].split("```")[0].strip()
+            ai_response_text = ai_response_text.split("
+```")[1].split("```")[0].strip()
             
         ai_response_text = ai_response_text.replace("**", "").strip()
         
+        # கிளீன் செய்யப்பட்ட சுத்தமான JSON உரையை இப்போது லோடு செய்கிறோம்
         result_data = json.loads(ai_response_text)
         return jsonify(result_data)
         
