@@ -19,7 +19,12 @@
             --accent-purple: #a55eea;
         }
 
-        * { box-sizing: border-box; margin: 0; padding: 0; font-family: 'Poppins', sans-serif; }
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+            font-family: 'Poppins', sans-serif;
+        }
 
         body {
             background: var(--bg-gradient);
@@ -29,6 +34,28 @@
             align-items: center;
             padding: 20px;
             color: var(--text-primary);
+            position: relative;
+        }
+
+        /* Language Dropdown Style */
+        .lang-container {
+            position: absolute;
+            top: 20px;
+            right: 20px;
+        }
+        .lang-select {
+            padding: 8px 14px;
+            background: rgba(255, 255, 255, 0.12);
+            border: 1px solid var(--card-border);
+            color: white;
+            border-radius: 8px;
+            cursor: pointer;
+            font-weight: 600;
+            outline: none;
+        }
+        .lang-select option {
+            background: #203a43;
+            color: white;
         }
 
         .container {
@@ -36,95 +63,348 @@
             max-width: 620px;
             background: var(--card-bg);
             backdrop-filter: blur(16px);
+            -webkit-backdrop-filter: blur(16px);
             border: 1px solid var(--card-border);
             border-radius: 24px;
             padding: 40px 30px;
             box-shadow: 0 20px 45px rgba(0, 0, 0, 0.3);
+            transition: transform 0.3s ease;
+            margin-top: 40px;
         }
 
-        /* PDF சுருக்கத்திற்கான புதிய வசதி */
-        #reportContent {
+        .header {
+            text-align: center;
+            margin-bottom: 35px;
+        }
+
+        .header h1 {
+            font-size: 2.2rem;
+            font-weight: 700;
+            background: linear-gradient(to right, var(--accent-blue), var(--accent-green));
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            margin-bottom: 10px;
+        }
+
+        .header p {
+            font-size: 0.95rem;
+            color: var(--text-secondary);
+        }
+
+        .form-grid {
+            display: grid;
+            grid-template-columns: 1fr;
+            gap: 15px;
+            margin-bottom: 25px;
+        }
+
+        .form-group {
+            margin-bottom: 5px;
+        }
+
+        .form-group label {
+            display: block;
+            font-size: 0.9rem;
+            font-weight: 600;
+            margin-bottom: 8px;
+            color: var(--text-secondary);
+        }
+
+        .form-group input, .form-group select {
             width: 100%;
-            max-width: 800px;
-            margin: 0 auto;
-            word-wrap: break-word;
+            padding: 14px 18px;
+            background: rgba(255, 255, 255, 0.05);
+            border: 1px solid var(--card-border);
+            border-radius: 12px;
+            color: #fff;
+            font-size: 1rem;
+            outline: none;
+            transition: all 0.3s ease;
         }
 
-        .header { text-align: center; margin-bottom: 35px; }
-        .header h1 { font-size: 2.2rem; font-weight: 700; background: linear-gradient(to right, var(--accent-blue), var(--accent-green)); -webkit-background-clip: text; -webkit-text-fill-color: transparent; }
-        
-        .form-group { margin-bottom: 15px; }
-        .form-group label { display: block; font-size: 0.9rem; color: var(--text-secondary); margin-bottom: 8px; }
-        .form-group input, .form-group select { width: 100%; padding: 14px 18px; background: rgba(255, 255, 255, 0.05); border: 1px solid var(--card-border); border-radius: 12px; color: #fff; }
-        
-        .btn-submit { width: 100%; padding: 16px; background: linear-gradient(135deg, #00c6ff, #0072ff); border: none; border-radius: 12px; color: #fff; font-weight: 600; cursor: pointer; }
+        .form-group select option {
+            background: #203a43;
+            color: #fff;
+        }
 
-        .result-box { display: none; margin-top: 35px; padding-top: 25px; border-top: 1px solid var(--card-border); }
-        .price-card { background: rgba(255, 255, 255, 0.04); border: 1px solid var(--card-border); border-radius: 16px; padding: 20px; margin-bottom: 15px; position: relative; }
-        
+        .form-group input:focus, .form-group select:focus {
+            border-color: var(--accent-blue);
+            background: rgba(255, 255, 255, 0.1);
+        }
+
+        .btn-submit {
+            width: 100%;
+            padding: 16px;
+            background: linear-gradient(135deg, #00c6ff, #0072ff);
+            border: none;
+            border-radius: 12px;
+            color: #fff;
+            font-size: 1.1rem;
+            font-weight: 600;
+            cursor: pointer;
+            box-shadow: 0 6px 20px rgba(0, 114, 255, 0.3);
+            transition: all 0.3s ease;
+            margin-bottom: 10px;
+        }
+
+        .loader-container {
+            display: none;
+            text-align: center;
+            margin-top: 25px;
+        }
+
+        .spinner {
+            width: 40px;
+            height: 40px;
+            border: 4px solid rgba(255, 255, 255, 0.1);
+            border-top-color: var(--accent-blue);
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+            margin: 0 auto 10px;
+        }
+
+        @keyframes spin { to { transform: rotate(360deg); } }
+
+        .result-box {
+            display: none;
+            margin-top: 35px;
+            padding-top: 25px;
+            border-top: 1px solid var(--card-border);
+            animation: fadeIn 0.5s ease forwards;
+        }
+
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(10px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        .result-title {
+            font-size: 1.5rem;
+            font-weight: 700;
+            color: var(--accent-blue);
+            margin-bottom: 20px;
+            text-align: center;
+            letter-spacing: 1px;
+        }
+
+        .pdf-content {
+            padding: 10px;
+            border-radius: 16px;
+        }
+
+        .meta-container {
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 10px;
+            margin-bottom: 20px;
+        }
+
+        .meta-badge {
+            background: rgba(255, 255, 255, 0.04);
+            padding: 12px;
+            border-radius: 12px;
+            text-align: center;
+            font-size: 0.85rem;
+            color: var(--text-secondary);
+            border: 1px solid var(--card-border);
+        }
+
+        .meta-badge strong { display: block; color: #fff; font-size: 1.05rem; margin-top: 3px;}
+
+        .price-card {
+            background: rgba(255, 255, 255, 0.04);
+            border: 1px solid var(--card-border);
+            border-radius: 16px;
+            padding: 20px;
+            margin-bottom: 15px;
+            display: flex;
+            flex-direction: column;
+            gap: 5px;
+            position: relative;
+        }
+
+        .price-card.new { border-left: 5px solid var(--accent-orange); }
+        .price-card.resale { border-left: 5px solid var(--accent-green); }
+
+        .price-label { font-size: 0.85rem; color: var(--text-secondary); font-weight: 600; }
         .price-value { font-size: 1.8rem; font-weight: 700; }
-        .meta-container { display: grid; grid-template-columns: repeat(2, 1fr); gap: 10px; margin-bottom: 20px; }
-        .meta-badge { background: rgba(255, 255, 255, 0.04); padding: 12px; border-radius: 12px; text-align: center; }
-        
-        .action-group { display: grid; grid-template-columns: repeat(2, 1fr); gap: 15px; }
-        .btn-action { padding: 14px; border: none; border-radius: 12px; color: #fff; font-weight: 600; cursor: pointer; }
-        .btn-pdf { background: #e74c3c; }
-        .btn-wa { background: #2ecc71; }
+        .price-card.new .price-value { color: var(--accent-orange); }
+        .price-card.resale .price-value { color: var(--accent-green); }
+
+        .pct-badge {
+            position: absolute;
+            right: 20px;
+            top: 20px;
+            background: rgba(255, 75, 75, 0.2);
+            color: #ff7675;
+            padding: 4px 12px;
+            border-radius: 20px;
+            font-size: 0.8rem;
+            font-weight: 700;
+            border: 1px solid rgba(255, 75, 75, 0.3);
+        }
+
+        .advice-card {
+            background: rgba(165, 94, 234, 0.08);
+            border: 1px solid rgba(165, 94, 234, 0.2);
+            border-left: 5px solid var(--accent-purple);
+            border-radius: 16px;
+            padding: 20px;
+            margin-bottom: 25px;
+        }
+
+        .advice-title {
+            font-size: 0.95rem;
+            font-weight: 700;
+            color: var(--accent-purple);
+            margin-bottom: 5px;
+        }
+
+        .advice-text { font-size: 0.95rem; line-height: 1.6; color: #e0e0e0; }
+
+        .action-group {
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 15px;
+        }
+
+        .btn-action {
+            padding: 14px;
+            border: none;
+            border-radius: 12px;
+            font-size: 0.95rem;
+            font-weight: 600;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 8px;
+            transition: all 0.3s ease;
+            color: #fff;
+        }
+
+        .btn-pdf { background: linear-gradient(135deg, #e74c3c, #c0392b); box-shadow: 0 4px 15px rgba(231, 76, 60, 0.3); }
+        .btn-wa { background: linear-gradient(135deg, #2ecc71, #27ae60); box-shadow: 0 4px 15px rgba(46, 204, 113, 0.3); }
+
+        .btn-action:hover { transform: translateY(-2px); filter: brightness(1.1); }
+
+        .error-box {
+            display: none;
+            margin-top: 25px;
+            background: rgba(255, 75, 75, 0.1);
+            border-left: 5px solid #ff4b4b;
+            padding: 15px;
+            border-radius: 12px;
+            color: #ff8a8a;
+            text-align: center;
+        }
     </style>
 </head>
 <body>
 
+    <div class="lang-container">
+        <select id="langSelect" class="lang-select" onchange="toggleLanguage()">
+            <option value="ta" selected>🌐 தமிழ்</option>
+            <option value="en">🌐 English</option>
+        </select>
+    </div>
+
     <div class="container">
         <div class="header">
             <h1 id="lblTitle">AI வாகன விலைக்கணிப்பு</h1>
+            <p id="lblSubtitle">Premium Enterprise Pro Edition</p>
         </div>
 
         <div class="form-grid">
             <div class="form-group">
-                <label id="lblVehicle">வாகனத்தின் பெயர்</label>
-                <input type="text" id="vehicle" placeholder="எ.கா: Yamaha R15">
+                <label id="lblVehicle" for="vehicle">வாகனத்தின் பெயர்</label>
+                <input type="text" id="vehicle" placeholder="எ.கா: Yamaha R15, Swift, Activa">
             </div>
+
             <div class="form-group">
-                <label id="lblKm">ஓடிய கிலோமீட்டர் (km)</label>
-                <input type="number" id="km" placeholder="15000">
+                <label id="lblKm" for="km">ஓடிய கிலோமீட்டர் (km)</label>
+                <input type="number" id="km" placeholder="எ.கா: 15000">
             </div>
+
             <div class="form-group">
-                <label id="lblFuel">எரிபொருள் வகை</label>
+                <label id="lblFuel" for="fuel_type">எரிபொருள் வகை (Fuel Type)</label>
                 <select id="fuel_type">
-                    <option value="Petrol">Petrol</option>
-                    <option value="Diesel">Diesel</option>
+                    <option value="Petrol" id="optPetrol" selected>Petrol (பெட்ரோல்)</option>
+                    <option value="Diesel" id="optDiesel">Diesel (டீசல்)</option>
+                    <option value="Electric (EV)" id="optEV">Electric (இவி பேட்டரி வண்டி)</option>
                 </select>
             </div>
+
             <div class="form-group">
-                <label id="lblCondition">நிலை (Condition)</label>
-                <select id="condition">
-                    <option value="Excellent">Excellent</option>
-                    <option value="Good">Good</option>
+                <label id="lblOwners" for="owners">முந்தைய உரிமையாளர்கள் (Owners)</label>
+                <select id="owners">
+                    <option value="1st Owner" id="opt1st" selected>1st Owner (முதல் கை வண்டி)</option>
+                    <option value="2nd Owner" id="opt2nd">2nd Owner (இரண்டாம் கை வண்டி)</option>
+                    <option value="3rd Owner or more" id="opt3rd">3rd Owner + (மூன்றாம் கை அல்லது அதற்கு மேல்)</option>
                 </select>
+            </div>
+
+            <div class="form-group">
+                <label id="lblCondition" for="condition">வாகனத்தின் தற்போதைய நிலை (Condition)</label>
+                <select id="condition">
+                    <option value="Excellent" id="optExc">Excellent (மிகவும் புதியது போல் உள்ளது)</option>
+                    <option value="Good" id="optGood" selected>Good (நன்றாக உள்ளது - Minor Scratches)</option>
+                    <option value="Fair" id="optFair">Fair (அதிக பயன்பாடு - Repairs Needed)</option>
+                </select>
+            </div>
+
+            <div class="form-group">
+                <label id="lblPhoto" for="vehicle_photo">வாகனத்தின் புகைப்படம் (விருப்பமிருந்தால் - Optional)</label>
+                <input type="file" id="vehicle_photo" accept="image/*" style="padding: 10px;" onchange="previewImage(event)">
+                
+                <div id="imagePreviewContainer" style="display: none; margin-top: 15px; text-align: center;">
+                    <p style="font-size: 0.85rem; color: var(--text-secondary); margin-bottom: 5px;">தேர்ந்தெடுக்கப்பட்ட புகைப்படம்:</p>
+                    <img id="imagePreview" src="#" alt="Vehicle Preview" style="max-width: 100%; max-height: 200px; border-radius: 12px; border: 2px solid var(--accent-blue); padding: 3px;">
+                </div>
             </div>
         </div>
 
         <button class="btn-submit" id="btnCalculate" onclick="calculatePrice()">மதிப்பைக் கணக்கிடு 🚀</button>
 
+        <div class="loader-container" id="loader">
+            <div class="spinner"></div>
+            <p id="lblLoaderText" style="color: var(--text-secondary); font-size: 0.9rem;">AI இன்ஜின் சந்தை நிலவரத்தை அலசிப் பார்க்கிறது...</p>
+        </div>
+
+        <div class="error-box" id="errorMsg"></div>
+
         <div class="result-box" id="resultBox">
+            
             <div id="reportContent" class="pdf-content">
-                <div class="result-title" id="resVehicleName" style="text-align: center; margin-bottom: 20px;">VEHICLE</div>
+                <div class="result-title" id="resVehicleName">VEHICLE</div>
+                
                 <div class="meta-container">
-                    <div class="meta-badge"><span id="resLblKm">தூரம்</span> <strong id="resKm">0 km</strong></div>
-                    <div class="meta-badge"><span id="resLblCond">நிலை</span> <strong id="resCondition">Good</strong></div>
+                    <div class="meta-badge"><span id="resLblKm">ஓடிய தூரம்</span> <strong id="resKm">0 km</strong></div>
+                    <div class="meta-badge"><span id="resLblCond">நிலை (Condition)</span> <strong id="resCondition">Good</strong></div>
+                    <div class="meta-badge"><span id="resLblFuel">எரிபொருள் வகை</span> <strong id="resFuel">Petrol</strong></div>
+                    <div class="meta-badge"><span id="resLblOwners">உரிமையாளர்</span> <strong id="resOwners">1st Owner</strong></div>
                 </div>
-                <div class="price-card">
-                    <span class="price-label">மறுவிற்பனை மதிப்பு:</span>
+
+                <div class="price-card new">
+                    <span class="price-label" id="resLblNewPrice">புதிய வாகனத்தின் இன்றைய ஆன்-ரோடு விலை:</span>
+                    <span class="price-value" id="resNewPrice">₹0</span>
+                </div>
+
+                <div class="price-card resale">
+                    <span class="price-label" id="resLblResalePrice">தற்போதைய மறுவிற்பனை மதிப்பு (Resale Value):</span>
                     <span class="price-value" id="resEstimatedPrice">₹0</span>
+                    <span class="pct-badge" id="resPct">0% Drop</span>
                 </div>
+
                 <div class="advice-card">
-                    <p class="advice-text" id="resAdvice">AI அறிக்கை இங்கே...</p>
+                    <div class="advice-title" id="resLblAdviceTitle">💡 Gemini AI நிபுணர் அறிக்கை:</div>
+                    <p class="advice-text" id="resAdvice">பகுப்பாய்வு செய்யப்படுகிறது...</p>
                 </div>
             </div>
 
             <div class="action-group">
-                <button class="btn-action btn-pdf" onclick="downloadPDF()">📄 PDF அறிக்கை</button>
-                <button class="btn-action btn-wa" onclick="shareWhatsApp()">💬 வாட்ஸ்அப் பகிர்வு</button>
+                <button class="btn-action btn-pdf" id="btnPdfText" onclick="downloadPDF()">📄 PDF அறிக்கை</button>
+                <button class="btn-action btn-wa" id="btnWaText" onclick="shareWhatsApp()">💬 வாட்ஸ்அப் பகிர்வு</button>
             </div>
         </div>
     </div>
@@ -132,23 +412,241 @@
     <script>
         let reportData = null;
 
+        const translation = {
+            ta: {
+                title: "AI வாகன விலைக்கணிப்பு", subtitle: "Premium Enterprise Pro Edition",
+                vehicle: "வாகனத்தின் பெயர்", km: "ஓடிய கிலோமீட்டர் (km)", fuel: "எரிபொருள் வகை (Fuel Type)",
+                owners: "முந்தைய உரிமையாளர்கள் (Owners)", condition: "வாகனத்தின் தற்போதைய நிலை (Condition)", btnCalc: "மதிப்பைக் கணக்கிடு 🚀",
+                loader: "AI இன்ஜின் சந்தை நிலவரத்தையும் உங்கள் புகைப்படத்தையும் அலசிப் பார்க்கிறது...", photo: "வாகனத்தின் புகைப்படம் (விருப்பமிருந்தால் - Optional)",
+                petrol: "Petrol (பெட்ரோல்)", diesel: "Diesel (டீசல்)", ev: "Electric (இவி பேட்டரி வண்டி)",
+                o1: "1st Owner (முதல் கை வண்டி)", o2: "2nd Owner (இரண்டாம் கை வண்டி)", o3: "3rd Owner + (மூன்றாம் கை அல்லது அதற்கு மேல்)",
+                c1: "Excellent (மிகவும் புதியது போல் உள்ளது)", c2: "Good (நன்றாக உள்ளது - Minor Scratches)", c3: "Fair (அதிக பயன்பாடு - Repairs Needed)",
+                resKm: "ஓடிய தூரம்", resCond: "நிலை (Condition)", resFuel: "எரிபொருள் வகை", resOwners: "உரிமையாளர்",
+                resNew: "புதிய வாகனத்தின் இன்றைய ஆன்-ரோடு விலை:", resResale: "தற்போதைய மறுவிற்பனை மதிப்பு (Resale Value):",
+                resAdvTitle: "💡 Gemini AI நிபுணர் அறிக்கை:", btnPdf: "📄 PDF அறிக்கை", btnWa: "💬 வாட்ஸ்அப் பகிர்வு",
+                dropText: "Price Drop", errText: "தயவுசெய்து அனைத்து விவரங்களையும் நிரப்பவும்!", waHeader: "AI வாகன மதிப்பு அறிக்கை"
+            },
+            en: {
+                title: "AI Vehicle Valuation", subtitle: "Premium Enterprise Pro Edition",
+                vehicle: "Vehicle Name", km: "Kilometers Driven (km)", fuel: "Fuel Type",
+                owners: "Previous Owners", condition: "Current Condition", btnCalc: "Calculate Value 🚀",
+                loader: "AI is analyzing market trends and your photo...", photo: "Vehicle Photo (Optional)",
+                petrol: "Petrol", diesel: "Diesel", ev: "Electric (EV)",
+                o1: "1st Owner", o2: "2nd Owner", o3: "3rd Owner or more",
+                c1: "Excellent (Like Brand New)", c2: "Good (Minor Scratches)", c3: "Fair (Repairs Needed)",
+                resKm: "Driven", resCond: "Condition", resFuel: "Fuel Type", resOwners: "Owner",
+                resNew: "Current On-Road Price of New Vehicle:", resResale: "Estimated Resale Value:",
+                resAdvTitle: "💡 Gemini AI Expert Report:", btnPdf: "📄 PDF Report", btnWa: "💬 WhatsApp Share",
+                dropText: "Price Drop", errText: "Please fill all fields!", waHeader: "AI Vehicle Valuation Report"
+            }
+        };
+
+        // புகைப்படம் சுருக்கும் பங்க்ஷன் (800px Resizing)
+        async function resizeAndCompressImage(file) {
+            return new Promise((resolve) => {
+                const reader = new FileReader();
+                reader.readAsDataURL(file);
+                reader.onload = (event) => {
+                    const img = new Image();
+                    img.src = event.target.result;
+                    img.onload = () => {
+                        const canvas = document.createElement('canvas');
+                        const MAX_WIDTH = 800; 
+                        const scaleSize = MAX_WIDTH / img.width;
+                        canvas.width = MAX_WIDTH;
+                        canvas.height = img.height * scaleSize;
+                        const ctx = canvas.getContext('2d');
+                        ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
+                        canvas.toBlob((blob) => { resolve(blob); }, 'image/jpeg', 0.8);
+                    };
+                };
+            });
+        }
+
+        // புகைப்படத்தை வெப்சைட் ஸ்க்ரீனிலேயே காட்டும் ஃபங்க்ஷன்
+        function previewImage(event) {
+            const reader = new FileReader();
+            const imageField = document.getElementById('imagePreview');
+            const previewContainer = document.getElementById('imagePreviewContainer');
+            
+            reader.onload = function() {
+                if (reader.readyState === 2) {
+                    imageField.src = reader.result;
+                    previewContainer.style.display = 'block';
+                }
+            }
+            
+            if (event.target.files[0]) {
+                reader.readAsDataURL(event.target.files[0]);
+            } else {
+                previewContainer.style.display = 'none';
+            }
+        }
+
+        function toggleLanguage() {
+            const lang = document.getElementById('langSelect').value;
+            const t = translation[lang];
+
+            document.getElementById('lblTitle').innerText = t.title;
+            document.getElementById('lblSubtitle').innerText = t.subtitle;
+            document.getElementById('lblVehicle').innerText = t.vehicle;
+            document.getElementById('lblKm').innerText = t.km;
+            document.getElementById('lblFuel').innerText = t.fuel;
+            document.getElementById('lblOwners').innerText = t.owners;
+            document.getElementById('lblCondition').innerText = t.condition;
+            document.getElementById('lblPhoto').innerText = t.photo;
+            document.getElementById('btnCalculate').innerText = t.btnCalc;
+            document.getElementById('lblLoaderText').innerText = t.loader;
+
+            document.getElementById('optPetrol').innerText = t.petrol;
+            document.getElementById('optDiesel').innerText = t.diesel;
+            document.getElementById('optEV').innerText = t.ev;
+            document.getElementById('opt1st').innerText = t.o1;
+            document.getElementById('opt2nd').innerText = t.o2;
+            document.getElementById('opt3rd').innerText = t.o3;
+            document.getElementById('optExc').innerText = t.c1;
+            document.getElementById('optGood').innerText = t.c2;
+            document.getElementById('optFair').innerText = t.c3;
+
+            document.getElementById('resLblKm').innerText = t.resKm;
+            document.getElementById('resLblCond').innerText = t.resCond;
+            document.getElementById('resLblFuel').innerText = t.resFuel;
+            document.getElementById('resLblOwners').innerText = t.resOwners;
+            document.getElementById('resLblNewPrice').innerText = t.resNew;
+            document.getElementById('resLblResalePrice').innerText = t.resResale;
+            document.getElementById('resLblAdviceTitle').innerText = t.resAdvTitle;
+            document.getElementById('btnPdfText').innerText = t.btnPdf;
+            document.getElementById('btnWaText').innerText = t.btnWa;
+            
+            if(reportData) {
+                document.getElementById('resPct').innerText = reportData.depreciation_percent + '% ' + t.dropText;
+            }
+        }
+
         async function calculatePrice() {
-            // உங்கள் தர்க்கம் இங்கே...
-            // உதாரணத்திற்கு மட்டும்:
-            document.getElementById('resultBox').style.display = 'block';
-            reportData = { vehicle_name: "Test Vehicle", kilometers: "1000", condition: "Good", estimated_price: "50000", ai_advice: "நல்ல நிலை" };
+            const vehicle = document.getElementById('vehicle').value;
+            const km = document.getElementById('km').value;
+            const condition = document.getElementById('condition').value;
+            const fuel_type = document.getElementById('fuel_type').value;
+            const owners = document.getElementById('owners').value;
+            const lang = document.getElementById('langSelect').value;
+            const photoInput = document.getElementById('vehicle_photo');
+            
+            const loader = document.getElementById('loader');
+            const resultBox = document.getElementById('resultBox');
+            const errorMsg = document.getElementById('errorMsg');
+
+            resultBox.style.display = 'none';
+            errorMsg.style.display = 'none';
+
+            if (!vehicle || !km) {
+                errorMsg.innerText = translation[lang].errText;
+                errorMsg.style.display = 'block';
+                return;
+            }
+
+            loader.style.display = 'block';
+
+            const formData = new FormData();
+            formData.append('vehicle', vehicle);
+            formData.append('km', km);
+            formData.append('condition', condition);
+            formData.append('fuel_type', fuel_type);
+            formData.append('owners', owners);
+            formData.append('lang', lang);
+
+            // புகைப்படம் இருந்தால் சுருக்கி சேர்க்கவும்
+            if (photoInput.files.length > 0) {
+                const compressedBlob = await resizeAndCompressImage(photoInput.files[0]);
+                formData.append('photo', compressedBlob, 'vehicle.jpg');
+            }
+
+            try {
+                const response = await fetch('/estimate', {
+                    method: 'POST',
+                    body: formData
+                });
+
+                const data = await response.json();
+                loader.style.display = 'none';
+
+                if (data.error) {
+                    errorMsg.innerText = data.error;
+                    errorMsg.style.display = 'block';
+                    return;
+                } 
+
+                // தவறான நாய் போட்டோக்கள் வரும்போது தடுத்து நிறுத்தும் லாஜிக்
+                if (data.estimated_price == 0 || data.estimated_price == "0") {
+                    errorMsg.innerText = data.ai_advice;
+                    errorMsg.style.display = 'block';
+                    return;
+                }
+
+                reportData = data;
+                
+                const formatCurrency = (num) => {
+                    const cleanNum = String(num).replace(/[^0-9]/g, '');
+                    return cleanNum ? '₹' + Number(cleanNum).toLocaleString('en-IN') : '₹' + num;
+                };
+
+                document.getElementById('resVehicleName').innerText = data.vehicle_name;
+                document.getElementById('resKm').innerText = Number(data.kilometers).toLocaleString('en-IN') + ' km';
+                document.getElementById('resCondition').innerText = data.condition;
+                document.getElementById('resFuel').innerText = data.fuel_type;
+                document.getElementById('resOwners').innerText = data.owners;
+                
+                document.getElementById('resNewPrice').innerText = formatCurrency(data.new_price);
+                document.getElementById('resEstimatedPrice').innerText = formatCurrency(data.estimated_price);
+                document.getElementById('resPct').innerText = data.depreciation_percent + '% ' + translation[lang].dropText;
+                document.getElementById('resAdvice').innerText = data.ai_advice;
+                
+                resultBox.style.display = 'block';
+                
+            } catch (error) {
+                loader.style.display = 'none';
+                errorMsg.innerText = lang === 'ta' ? "ஆன்லைனில் கணக்கிடுவதில் பிழை ஏற்பட்டது. மீண்டும் முயற்சிக்கவும்!" : "Calculation error occurred. Please try again!";
+                errorMsg.style.display = 'block';
+            }
         }
 
         function downloadPDF() {
             const element = document.getElementById('reportContent');
+            const vehicleName = document.getElementById('resVehicleName').innerText;
+            
             const opt = {
-                margin: 10,
-                filename: 'Report.pdf',
-                image: { type: 'jpeg', quality: 0.98 },
-                html2canvas: { scale: 2, width: 800 }, // 800px அகலத்திற்கு சுருக்குகிறது
-                jsPDF: { unit: 'mm', format: 'a4', orientation: 'portrait' }
+                margin:       10,
+                filename:     `AI_Valuation_Report_${vehicleName}.pdf`,
+                image:        { type: 'jpeg', quality: 0.98 },
+                html2canvas:  { scale: 2, backgroundColor: '#1a323d' },
+                jsPDF:        { unit: 'mm', format: 'a4', orientation: 'portrait' }
             };
+            
             html2pdf().set(opt).from(element).save();
+        }
+
+        function shareWhatsApp() {
+            if(!reportData) return;
+            const lang = document.getElementById('langSelect').value;
+            const t = translation[lang];
+            
+            const formatCurrency = (num) => {
+                const cleanNum = String(num).replace(/[^0-9]/g, '');
+                return cleanNum ? 'Rs. ' + Number(cleanNum).toLocaleString('en-IN') : 'Rs. ' + num;
+            };
+
+            const text = `🚗 *${t.waHeader}* 🚗\n\n` +
+                         `🔹 *${t.vehicle}:* ${reportData.vehicle_name}\n` +
+                         `🔹 *${t.resKm}:* ${Number(reportData.kilometers).toLocaleString('en-IN')} km\n` +
+                         `🔹 *${t.resCond}:* ${reportData.condition}\n` +
+                         `🔹 *${t.resFuel}:* ${reportData.fuel_type}\n` +
+                         `🔹 *${t.resOwners}:* ${reportData.owners}\n\n` +
+                         `💰 *${t.resNew}* ${formatCurrency(reportData.new_price)}\n` +
+                         `📉 *${t.resResale}* ${formatCurrency(reportData.estimated_price)} (${reportData.depreciation_percent}% ${lang === 'ta' ? 'குறைவு' : 'Drop'})\n\n` +
+                         `💡 *AI Report:* ${reportData.ai_advice}`;
+            
+            const url = `https://api.whatsapp.com/send?text=${encodeURIComponent(text)}`;
+            window.open(url, '_blank');
         }
     </script>
 </body>
