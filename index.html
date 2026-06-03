@@ -1,481 +1,105 @@
-<!DOCTYPE html>
-<html lang="ta">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>AI வாகன விலைக்கணிப்பு - Enterprise Pro</title>
-    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;600;700&display=swap" rel="stylesheet">
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
-    <style>
-        :root {
-            --bg-gradient: linear-gradient(135deg, #0f2027, #203a43, #2c5364);
-            --card-bg: rgba(255, 255, 255, 0.08);
-            --card-border: rgba(255, 255, 255, 0.15);
-            --text-primary: #ffffff;
-            --text-secondary: #b0bec5;
-            --accent-blue: #00d2ff;
-            --accent-green: #00ff87;
-            --accent-orange: #ff9f43;
-            --accent-purple: #a55eea;
-        }
+import os
+import json
+import io
+from flask import Flask, request, jsonify, send_from_directory
+from flask_cors import CORS
+from google import genai
+from PIL import Image # போட்டோக்களை பிராசஸ் செய்ய Pillow இம்போர்ட் செய்கிறோம்
 
-        * {
-            box-sizing: border-box;
-            margin: 0;
-            padding: 0;
-            font-family: 'Poppins', sans-serif;
-        }
+app = Flask(__name__)
+CORS(app)
 
-        body {
-            background: var(--bg-gradient);
-            min-height: 100vh;
-            display: flex;
-            justify-content: center;
-            align-items: center;
-            padding: 20px;
-            color: var(--text-primary);
-        }
+# உங்கள் Gemini API Key Render Environment-ல் இருந்து பாதுகாப்பாக எடுக்கப்படுகிறது
+os.environ["GEMINI_API_KEY"] = os.environ.get("GEMINI_API_KEY", "")
 
-        .container {
-            width: 100%;
-            max-width: 620px;
-            background: var(--card-bg);
-            backdrop-filter: blur(16px);
-            -webkit-backdrop-filter: blur(16px);
-            border: 1px solid var(--card-border);
-            border-radius: 24px;
-            padding: 40px 30px;
-            box-shadow: 0 20px 45px rgba(0, 0, 0, 0.3);
-            transition: transform 0.3s ease;
-        }
+try:
+    client = genai.Client()
+except Exception as e:
+    print("Gemini Client Error:", e)
 
-        .header {
-            text-align: center;
-            margin-bottom: 35px;
-        }
+@app.route('/')
+def home():
+    return send_from_directory(os.getcwd(), 'index.html')
 
-        .header h1 {
-            font-size: 2.2rem;
-            font-weight: 700;
-            background: linear-gradient(to right, var(--accent-blue), var(--accent-green));
-            -webkit-background-clip: text;
-            -webkit-text-fill-color: transparent;
-            margin-bottom: 10px;
-        }
+@app.route('/estimate', methods=['POST'])
+def estimate_with_ai():
+    # போட்டோ வருவதால் request.form மூலமாக டேட்டாவை எடுக்க வேண்டும்
+    vehicle = request.form.get('vehicle', '').strip()
+    km = request.form.get('km', '').strip()
+    condition = request.form.get('condition', 'Good').strip()
+    fuel_type = request.form.get('fuel_type', 'Petrol').strip()
+    owners = request.form.get('owners', '1st Owner').strip()
+    lang = request.form.get('lang', 'ta').strip()
+    
+    # போட்டோ ஃபைலை எடுக்கிறோம்
+    photo_file = request.files.get('photo')
+    
+    if not vehicle or not km:
+        error_text = "விவரங்கள் தேவை!" if lang == 'ta' else "Details are required!"
+        return jsonify({"error": error_text}), 400
 
-        .header p {
-            font-size: 0.95rem;
-            color: var(--text-secondary);
-        }
+    # ஜெமினிக்கு அனுப்பும் கன்டென்ட் லிஸ்ட்
+    contents_list = []
 
-        .form-grid {
-            display: grid;
-            grid-template-columns: 1xl;
-            gap: 15px;
-            margin-bottom: 25px;
-        }
+    if photo_file:
+        try:
+            image_bytes = photo_file.read()
+            img = Image.open(io.BytesIO(image_bytes))
+            contents_list.append(img) # போட்டோ இருந்தால் லிஸ்ட்டில் சேர்க்கிறோம்
+        except Exception as e:
+            print("Image Load Error:", e)
 
-        .form-group {
-            margin-bottom: 5px;
-        }
+    # மொழிக்கு தகுந்தாற்போல் AI அட்வைஸ் கேட்கும் லாஜிக்
+    advice_prompt = (
+        "A short, expert 2-sentence market advice in Tamil explaining if this is a good deal considering the fuel type, owners count, and condition. If an image was uploaded, strictly mention what visual defects (like scratches, dents, or clean paint) you found in the photo, and state whether it matches the user claimed condition."
+        if lang == 'ta' else
+        "A short, expert 2-sentence market advice in English explaining if this is a good deal considering the fuel type, owners count, and condition. If an image was uploaded, strictly mention what visual defects (like scratches, dents, or clean paint) you found in the photo, and state whether it matches the user claimed condition."
+    )
 
-        .form-group label {
-            display: block;
-            font-size: 0.9rem;
-            font-weight: 600;
-            margin-bottom: 8px;
-            color: var(--text-secondary);
-        }
+    prompt = f"""
+    You are an expert Indian vehicle valuation and automobile market analyst. 
+    Analyze the following vehicle and the uploaded photo (if present) to determine its exact used market resale value:
+    
+    Vehicle Name: {vehicle}
+    Kilometers Driven: {km} km
+    User Claimed Condition: {condition}
+    Fuel Type: {fuel_type}
+    Number of Owners: {owners}
+    
+    Take into account that EV resale value drop differs from Petrol/Diesel, and higher number of owners significantly reduces the used car market value in India.
+    
+    Return the response strictly as a JSON object with these exact keys, and no extra text or markdown:
+    {{
+        "vehicle_name": "{vehicle.upper()}",
+        "kilometers": "{km}",
+        "condition": "{condition}",
+        "fuel_type": "{fuel_type}",
+        "owners": "{owners}",
+        "new_price": "only the brand new on-road integer price here based on current Indian market",
+        "estimated_price": "only the calculated used resale integer price here based on market trends, condition, and owners",
+        "depreciation_percent": "only the calculated integer value of price drop percentage from new price",
+        "ai_advice": "{advice_prompt}"
+    }}
+    """
+    
+    contents_list.append(prompt) # பிராம்ப்ட்டை சேர்க்கிறோம்
 
-        .form-group input, .form-group select {
-            width: 100%;
-            padding: 14px 18px;
-            background: rgba(255, 255, 255, 0.05);
-            border: 1px solid var(--card-border);
-            border-radius: 12px;
-            color: #fff;
-            font-size: 1rem;
-            outline: none;
-            transition: all 0.3s ease;
-        }
+    try:
+        response = client.models.generate_content(
+            model='gemini-2.5-flash',
+            contents=contents_list, # இமேஜ் மற்றும் டெக்ஸ்ட் இரண்டையும் ஒன்றாக அனுப்புகிறோம்
+        )
+        ai_response_text = response.text.strip()
+        
+        ai_response_text = ai_response_text.replace("```json", "").replace("```", "").replace("**", "").strip()
+        
+        result_data = json.loads(ai_response_text)
+        return jsonify(result_data)
+    except Exception as e:
+        print("API Error:", e)
+        error_text = "ஆன்லைனில் கணக்கிடுவதில் பிழை ஏற்பட்டது." if lang == 'ta' else "An error occurred during online calculation."
+        return jsonify({"error": error_text}), 500
 
-        .form-group select option {
-            background: #203a43;
-            color: #fff;
-        }
-
-        .form-group input:focus, .form-group select:focus {
-            border-color: var(--accent-blue);
-            background: rgba(255, 255, 255, 0.1);
-        }
-
-        .btn-submit {
-            width: 100%;
-            padding: 16px;
-            background: linear-gradient(135deg, #00c6ff, #0072ff);
-            border: none;
-            border-radius: 12px;
-            color: #fff;
-            font-size: 1.1rem;
-            font-weight: 600;
-            cursor: pointer;
-            box-shadow: 0 6px 20px rgba(0, 114, 255, 0.3);
-            transition: all 0.3s ease;
-            margin-bottom: 10px;
-        }
-
-        .loader-container {
-            display: none;
-            text-align: center;
-            margin-top: 25px;
-        }
-
-        .spinner {
-            width: 40px;
-            height: 40px;
-            border: 4px solid rgba(255, 255, 255, 0.1);
-            border-top-color: var(--accent-blue);
-            border-radius: 50%;
-            animation: spin 1s linear infinite;
-            margin: 0 auto 10px;
-        }
-
-        @keyframes spin { to { transform: rotate(360deg); } }
-
-        .result-box {
-            display: none;
-            margin-top: 35px;
-            padding-top: 25px;
-            border-top: 1px solid var(--card-border);
-            animation: fadeIn 0.5s ease forwards;
-        }
-
-        @keyframes fadeIn {
-            from { opacity: 0; transform: translateY(10px); }
-            to { opacity: 1; transform: translateY(0); }
-        }
-
-        .result-title {
-            font-size: 1.5rem;
-            font-weight: 700;
-            color: var(--accent-blue);
-            margin-bottom: 20px;
-            text-align: center;
-            letter-spacing: 1px;
-        }
-
-        /* PDF டவுன்லோடுக்கான குரூப் பாக்ஸ் */
-        .pdf-content {
-            padding: 10px;
-            border-radius: 16px;
-        }
-
-        .meta-container {
-            display: grid;
-            grid-template-columns: repeat(2, 1fr);
-            gap: 10px;
-            margin-bottom: 20px;
-        }
-
-        .meta-badge {
-            background: rgba(255, 255, 255, 0.04);
-            padding: 12px;
-            border-radius: 12px;
-            text-align: center;
-            font-size: 0.85rem;
-            color: var(--text-secondary);
-            border: 1px solid var(--card-border);
-        }
-
-        .meta-badge strong { display: block; color: #fff; font-size: 1.05rem; margin-top: 3px;}
-
-        .price-card {
-            background: rgba(255, 255, 255, 0.04);
-            border: 1px solid var(--card-border);
-            border-radius: 16px;
-            padding: 20px;
-            margin-bottom: 15px;
-            display: flex;
-            flex-direction: column;
-            gap: 5px;
-            position: relative;
-        }
-
-        .price-card.new { border-left: 5px solid var(--accent-orange); }
-        .price-card.resale { border-left: 5px solid var(--accent-green); }
-
-        .price-label { font-size: 0.85rem; color: var(--text-secondary); font-weight: 600; }
-        .price-value { font-size: 1.8rem; font-weight: 700; }
-        .price-card.new .price-value { color: var(--accent-orange); }
-        .price-card.resale .price-value { color: var(--accent-green); }
-
-        .pct-badge {
-            position: absolute;
-            right: 20px;
-            top: 20px;
-            background: rgba(255, 75, 75, 0.2);
-            color: #ff7675;
-            padding: 4px 12px;
-            border-radius: 20px;
-            font-size: 0.8rem;
-            font-weight: 700;
-            border: 1px solid rgba(255, 75, 75, 0.3);
-        }
-
-        .advice-card {
-            background: rgba(165, 94, 234, 0.08);
-            border: 1px solid rgba(165, 94, 234, 0.2);
-            border-left: 5px solid var(--accent-purple);
-            border-radius: 16px;
-            padding: 20px;
-            margin-bottom: 25px;
-        }
-
-        .advice-title {
-            font-size: 0.95rem;
-            font-weight: 700;
-            color: var(--accent-purple);
-            margin-bottom: 5px;
-        }
-
-        .advice-text { font-size: 0.95rem; line-height: 1.6; color: #e0e0e0; }
-
-        /* ஆக்ஷன் பட்டன்கள் குரூப் */
-        .action-group {
-            display: grid;
-            grid-template-columns: repeat(2, 1fr);
-            gap: 15px;
-        }
-
-        .btn-action {
-            padding: 14px;
-            border: none;
-            border-radius: 12px;
-            font-size: 0.95rem;
-            font-weight: 600;
-            cursor: pointer;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            gap: 8px;
-            transition: all 0.3s ease;
-            color: #fff;
-        }
-
-        .btn-pdf { background: linear-gradient(135deg, #e74c3c, #c0392b); box-shadow: 0 4px 15px rgba(231, 76, 60, 0.3); }
-        .btn-wa { background: linear-gradient(135deg, #2ecc71, #27ae60); box-shadow: 0 4px 15px rgba(46, 204, 113, 0.3); }
-
-        .btn-action:hover { transform: translateY(-2px); filter: brightness(1.1); }
-
-        .error-box {
-            display: none;
-            margin-top: 25px;
-            background: rgba(255, 75, 75, 0.1);
-            border-left: 5px solid #ff4b4b;
-            padding: 15px;
-            border-radius: 12px;
-            color: #ff8a8a;
-            text-align: center;
-        }
-    </style>
-</head>
-<body>
-
-    <div class="container">
-        <div class="header">
-            <h1>AI வாகன விலைக்கணிப்பு</h1>
-            <p>Premium Enterprise Pro Edition</p>
-        </div>
-
-        <div class="form-grid">
-            <div class="form-group">
-                <label for="vehicle">வாகனத்தின் பெயர்</label>
-                <input type="text" id="vehicle" placeholder="எ.கா: Yamaha R15, Swift, Activa">
-            </div>
-
-            <div class="form-group">
-                <label for="km">ஓடிய கிலோமீட்டர் (km)</label>
-                <input type="number" id="km" placeholder="எ.கா: 15000">
-            </div>
-
-            <div class="form-group">
-                <label for="fuel_type">எரிபொருள் வகை (Fuel Type)</label>
-                <select id="fuel_type">
-                    <option value="Petrol" selected>Petrol (பெட்ரோல்)</option>
-                    <option value="Diesel">Diesel (டீசல்)</option>
-                    <option value="Electric (EV)">Electric (இவி பேட்டரி வண்டி)</option>
-                </select>
-            </div>
-
-            <div class="form-group">
-                <label for="owners">முந்தைய உரிமையாளர்கள் (Owners)</label>
-                <select id="owners">
-                    <option value="1st Owner" selected>1st Owner (முதல் கை வண்டி)</option>
-                    <option value="2nd Owner">2nd Owner (இரண்டாம் கை வண்டி)</option>
-                    <option value="3rd Owner or more">3rd Owner + (மூன்றாம் கை அல்லது அதற்கு மேல்)</option>
-                </select>
-            </div>
-
-            <div class="form-group">
-                <label for="condition">வாகனத்தின் தற்போதைய நிலை (Condition)</label>
-                <select id="condition">
-                    <option value="Excellent">Excellent (மிகவும் புதியது போல் உள்ளது)</option>
-                    <option value="Good" selected>Good (நன்றாக உள்ளது - Minor Scratches)</option>
-                    <option value="Fair">Fair (அதிக பயன்பாடு - Repairs Needed)</option>
-                </select>
-            </div>
-        </div>
-
-        <button class="btn-submit" onclick="calculatePrice()">மதிப்பைக் கணக்கிடு 🚀</button>
-
-        <div class="loader-container" id="loader">
-            <div class="spinner"></div>
-            <p style="color: var(--text-secondary); font-size: 0.9rem;">AI இன்ஜின் சந்தை நிலவரத்தை அலசிப் பார்க்கிறது...</p>
-        </div>
-
-        <div class="error-box" id="errorMsg"></div>
-
-        <div class="result-box" id="resultBox">
-            
-            <div id="reportContent" class="pdf-content">
-                <div class="result-title" id="resVehicleName">VEHICLE</div>
-                
-                <div class="meta-container">
-                    <div class="meta-badge">ஓடிய தூரம் <strong id="resKm">0 km</strong></div>
-                    <div class="meta-badge">நிலை (Condition) <strong id="resCondition">Good</strong></div>
-                    <div class="meta-badge">எரிபொருள் வகை <strong id="resFuel">Petrol</strong></div>
-                    <div class="meta-badge">உரிமையாளர் <strong id="resOwners">1st Owner</strong></div>
-                </div>
-
-                <div class="price-card new">
-                    <span class="price-label">புதிய வாகனத்தின் இன்றைய ஆன்-ரோடு விலை:</span>
-                    <span class="price-value" id="resNewPrice">₹0</span>
-                </div>
-
-                <div class="price-card resale">
-                    <span class="price-label">தற்போதைய மறுவிற்பனை மதிப்பு (Resale Value):</span>
-                    <span class="price-value" id="resEstimatedPrice">₹0</span>
-                    <span class="pct-badge" id="resPct">0% Drop</span>
-                </div>
-
-                <div class="advice-card">
-                    <div class="advice-title">💡 Gemini AI நிபுணர் அறிக்கை:</div>
-                    <p class="advice-text" id="resAdvice">பகுப்பாய்வு செய்யப்படுகிறது...</p>
-                </div>
-            </div>
-
-            <div class="action-group">
-                <button class="btn-action btn-pdf" onclick="downloadPDF()">📄 PDF அறிக்கை</button>
-                <button class="btn-action btn-wa" onclick="shareWhatsApp()">💬 வாட்ஸ்அப் பகிர்வு</button>
-            </div>
-        </div>
-    </div>
-
-    <script>
-        // உலகளாவிய வேரியபிள் ஷேர் செய்ய வசதியாக
-        let reportData = null;
-
-        async function calculatePrice() {
-            const vehicle = document.getElementById('vehicle').value;
-            const km = document.getElementById('km').value;
-            const condition = document.getElementById('condition').value;
-            const fuel_type = document.getElementById('fuel_type').value;
-            const owners = document.getElementById('owners').value;
-            
-            const loader = document.getElementById('loader');
-            const resultBox = document.getElementById('resultBox');
-            const errorMsg = document.getElementById('errorMsg');
-
-            resultBox.style.display = 'none';
-            errorMsg.style.display = 'none';
-
-            if (!vehicle || !km) {
-                errorMsg.innerText = "தயவுசெய்து அனைத்து விவரங்களையும் நிரப்பவும்!";
-                errorMsg.style.display = 'block';
-                return;
-            }
-
-            loader.style.display = 'block';
-
-            try {
-                const response = await fetch('/estimate', {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ vehicle: vehicle, km: km, condition: condition, fuel_type: fuel_type, owners: owners })
-                });
-
-                const data = await response.json();
-                loader.style.display = 'none';
-
-                if (data.error) {
-                    errorMsg.innerText = data.error;
-                    errorMsg.style.display = 'block';
-                } else {
-                    reportData = data; // டேட்டாவை சேமிக்கிறோம்
-                    
-                    const formatCurrency = (num) => {
-                        const cleanNum = String(num).replace(/[^0-9]/g, '');
-                        return cleanNum ? '₹' + Number(cleanNum).toLocaleString('en-IN') : '₹' + num;
-                    };
-
-                    document.getElementById('resVehicleName').innerText = data.vehicle_name;
-                    document.getElementById('resKm').innerText = Number(data.kilometers).toLocaleString('en-IN') + ' km';
-                    document.getElementById('resCondition').innerText = data.condition;
-                    document.getElementById('resFuel').innerText = data.fuel_type;
-                    document.getElementById('resOwners').innerText = data.owners;
-                    
-                    document.getElementById('resNewPrice').innerText = formatCurrency(data.new_price);
-                    document.getElementById('resEstimatedPrice').innerText = formatCurrency(data.estimated_price);
-                    document.getElementById('resPct').innerText = data.depreciation_percent + '% Price Drop';
-                    document.getElementById('resAdvice').innerText = data.ai_advice;
-                    
-                    resultBox.style.display = 'block';
-                }
-            } catch (error) {
-                loader.style.display = 'none';
-                errorMsg.innerText = "ஆன்லைனில் கணக்கிடுவதில் பிழை ஏற்பட்டது. மீண்டும் முயற்சிக்கவும்!";
-                errorMsg.style.display = 'block';
-            }
-        }
-
-        // 📄 PDF டவுன்லோட் செய்யும் மேஜிக் பங்க்ஷன்
-        function downloadPDF() {
-            const element = document.getElementById('reportContent');
-            const vehicleName = document.getElementById('resVehicleName').innerText;
-            
-            const opt = {
-                margin:       10,
-                filename:     `AI_Valuation_Report_${vehicleName}.pdf`,
-                image:        { type: 'jpeg', quality: 0.98 },
-                html2canvas:  { scale: 2, backgroundColor: '#1a323d' }, // பிளாக் தீமிற்கு ஏற்ற பேக்கிரவுண்ட்
-                jsPDF:        { unit: 'mm', format: 'a4', orientation: 'portrait' }
-            };
-            
-            html2pdf().set(opt).from(element).save();
-        }
-
-        // 💬 வாட்ஸ்அப் ஷேர் செய்யும் பங்க்ஷன்
-        function shareWhatsApp() {
-            if(!reportData) return;
-            
-            const formatCurrency = (num) => {
-                const cleanNum = String(num).replace(/[^0-9]/g, '');
-                return cleanNum ? 'Rs. ' + Number(cleanNum).toLocaleString('en-IN') : 'Rs. ' + num;
-            };
-
-            const text = `🚗 *AI வாகன மதிப்பு அறிக்கை* 🚗\n\n` +
-                         `🔹 *வாகனம்:* ${reportData.vehicle_name}\n` +
-                         `🔹 *ஓடிய தூரம்:* ${Number(reportData.kilometers).toLocaleString('en-IN')} km\n` +
-                         `🔹 *நிலை:* ${reportData.condition}\n` +
-                         `🔹 *எரிபொருள்:* ${reportData.fuel_type}\n` +
-                         `🔹 *உரிமையாளர்கள்:* ${reportData.owners}\n\n` +
-                         `💰 *புதிய ஆன்-ரோடு விலை:* ${formatCurrency(reportData.new_price)}\n` +
-                         `📉 *தற்போதைய சந்தை மதிப்பு:* ${formatCurrency(reportData.estimated_price)} (${reportData.depreciation_percent}% குறைவு)\n\n` +
-                         `💡 *AI அட்வைஸ்:* ${reportData.ai_advice}`;
-            
-            const url = `https://api.whatsapp.com/send?text=${encodeURIComponent(text)}`;
-            window.open(url, '_blank');
-        }
-    </script>
-</body>
-</html>
+if __name__ == '__main__':
+    port = int(os.environ.get("PORT", 5000))
+    app.run(host='0.0.0.0', port=port, debug=False)
