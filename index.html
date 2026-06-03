@@ -355,7 +355,12 @@
 
             <div class="form-group">
                 <label id="lblPhoto" for="vehicle_photo">வாகனத்தின் புகைப்படம் (விருப்பமிருந்தால் - Optional)</label>
-                <input type="file" id="vehicle_photo" accept="image/*" style="padding: 10px;">
+                <input type="file" id="vehicle_photo" accept="image/*" style="padding: 10px;" onchange="previewImage(event)">
+                
+                <div id="imagePreviewContainer" style="display: none; margin-top: 15px; text-align: center;">
+                    <p style="font-size: 0.85rem; color: var(--text-secondary); margin-bottom: 5px;">தேர்ந்தெடுக்கப்பட்ட புகைப்படம்:</p>
+                    <img id="imagePreview" src="#" alt="Vehicle Preview" style="max-width: 100%; max-height: 200px; border-radius: 12px; border: 2px solid var(--accent-blue); padding: 3px;">
+                </div>
             </div>
         </div>
 
@@ -436,6 +441,26 @@
             }
         };
 
+        // புகைப்படத்தை வெப்சைட் ஸ்க்ரீனிலேயே காட்டும் ஃபங்க்ஷன்
+        function previewImage(event) {
+            const reader = new FileReader();
+            const imageField = document.getElementById('imagePreview');
+            const previewContainer = document.getElementById('imagePreviewContainer');
+            
+            reader.onload = function() {
+                if (reader.readyState === 2) {
+                    imageField.src = reader.result;
+                    previewContainer.style.display = 'block';
+                }
+            }
+            
+            if (event.target.files[0]) {
+                reader.readAsDataURL(event.target.files[0]);
+            } else {
+                previewContainer.style.display = 'none';
+            }
+        }
+
         function toggleLanguage() {
             const lang = document.getElementById('langSelect').value;
             const t = translation[lang];
@@ -500,7 +525,6 @@
 
             loader.style.display = 'block';
 
-            // மல்டிபார்ட் ஃபார்ம் டேட்டா தயார் செய்தல் (போட்டோவை அனுப்ப இது கட்டாயம்)
             const formData = new FormData();
             formData.append('vehicle', vehicle);
             formData.append('km', km);
@@ -524,27 +548,36 @@
                 if (data.error) {
                     errorMsg.innerText = data.error;
                     errorMsg.style.display = 'block';
-                } else {
-                    reportData = data;
-                    
-                    const formatCurrency = (num) => {
-                        const cleanNum = String(num).replace(/[^0-9]/g, '');
-                        return cleanNum ? '₹' + Number(cleanNum).toLocaleString('en-IN') : '₹' + num;
-                    };
+                    return;
+                } 
 
-                    document.getElementById('resVehicleName').innerText = data.vehicle_name;
-                    document.getElementById('resKm').innerText = Number(data.kilometers).toLocaleString('en-IN') + ' km';
-                    document.getElementById('resCondition').innerText = data.condition;
-                    document.getElementById('resFuel').innerText = data.fuel_type;
-                    document.getElementById('resOwners').innerText = data.owners;
-                    
-                    document.getElementById('resNewPrice').innerText = formatCurrency(data.new_price);
-                    document.getElementById('resEstimatedPrice').innerText = formatCurrency(data.estimated_price);
-                    document.getElementById('resPct').innerText = data.depreciation_percent + '% ' + translation[lang].dropText;
-                    document.getElementById('resAdvice').innerText = data.ai_advice;
-                    
-                    resultBox.style.display = 'block';
+                // தவறான நாய் போட்டோக்கள் வரும்போது தடுத்து நிறுத்தும் லாஜிக்
+                if (data.estimated_price == 0 || data.estimated_price == "0") {
+                    errorMsg.innerText = data.ai_advice;
+                    errorMsg.style.display = 'block';
+                    return;
                 }
+
+                reportData = data;
+                
+                const formatCurrency = (num) => {
+                    const cleanNum = String(num).replace(/[^0-9]/g, '');
+                    return cleanNum ? '₹' + Number(cleanNum).toLocaleString('en-IN') : '₹' + num;
+                };
+
+                document.getElementById('resVehicleName').innerText = data.vehicle_name;
+                document.getElementById('resKm').innerText = Number(data.kilometers).toLocaleString('en-IN') + ' km';
+                document.getElementById('resCondition').innerText = data.condition;
+                document.getElementById('resFuel').innerText = data.fuel_type;
+                document.getElementById('resOwners').innerText = data.owners;
+                
+                document.getElementById('resNewPrice').innerText = formatCurrency(data.new_price);
+                document.getElementById('resEstimatedPrice').innerText = formatCurrency(data.estimated_price);
+                document.getElementById('resPct').innerText = data.depreciation_percent + '% ' + translation[lang].dropText;
+                document.getElementById('resAdvice').innerText = data.ai_advice;
+                
+                resultBox.style.display = 'block';
+                
             } catch (error) {
                 loader.style.display = 'none';
                 errorMsg.innerText = lang === 'ta' ? "ஆன்லைனில் கணக்கிடுவதில் பிழை ஏற்பட்டது. மீண்டும் முயற்சிக்கவும்!" : "Calculation error occurred. Please try again!";
